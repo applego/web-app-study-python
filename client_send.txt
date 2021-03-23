@@ -1,6 +1,7 @@
 GET / HTTP/1.1
 Host: localhost:80
 Connection: keep-alive
+Cache-Control: max-age=0
 sec-ch-ua: "Chromium";v="88", "Google Chrome";v="88", ";Not A Brand";v="99"
 sec-ch-ua-mobile: ?0
 Upgrade-Insecure-Requests: 1

@@ -1,6 +1,7 @@
 GET / HTTP/1.1
 Host: localhost:8080
 Connection: keep-alive
+Cache-Control: max-age=0
 sec-ch-ua: "Chromium";v="88", "Google Chrome";v="88", ";Not A Brand";v="99"
 sec-ch-ua-mobile: ?0
 Upgrade-Insecure-Requests: 1
@@ -13,4 +14,6 @@ Sec-Fetch-Dest: document
 Accept-Encoding: gzip, deflate, br
 Accept-Language: en-US,en;q=0.9,ja-JP;q=0.8,ja;q=0.7
 Cookie: _scrmbl_session=%2BUbiw4EKkLMJSNThxFwdVHeomliijUndhQCMcCKEbSs3aCa%2BKy0y0nGwuPaiQWB4PbOZEdFuOSLqyOlJ3LCA5M2jLeyAVQ40vOE61LIPsNtJKT8nl536y7oW5VJO%2B12CcShC%2Bi9ZthV05xkIDh4od%2FDDrfgXKCXjZMXTOCA0IFOHwuMY4BsKO6QygrDekH9QuakybmIrAWvZLscOy5j7wx2RviGaBCIkj4ZE--E8u2TlMgmAEoqyeF--6Zh3mVT4W0SmIWjGkynF5A%3D%3D; io=ZPpoi7K_MsbbqsgaAAAJ
+If-None-Match: "2d-5913a76187bc0"
+If-Modified-Since: Thu, 29 Aug 2019 05:05:59 GMT
 
