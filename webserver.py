@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import socket
+from datetime import datetime
 
-class TCPSserver:
+class WebSserver:
   """
-  TCP通史位を行うサーバを表すクラス
+  Webサーバを表すクラス
   """
   def serve(self):
     """
@@ -34,12 +35,25 @@ class TCPSserver:
       with open("server_recv.txt", "wb") as f:
         f.write(request)
 
-      # クライアントへ送信するレスポンスデータをファイルから取得する
-      with open("server_send.txt", "rb") as f:
-        response = f.read()
+      # レスポンスボディを生成
+      response_body = "<html><body><h1>It works!</h1></body></html>"
+
+      # レスポンスラインを生成
+      response_line = "HTTP/1.1 200 OK\r\n"
+
+      # レスポンスヘッダーを生成
+      response_header = ""
+      response_header += "Date: {}\r\n".format(datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'))
+      response_header += "Host: HenaServer//0.1\r\n"
+      response_header += "Content-Length: {}\r\n".format(len(response_body.encode()))
+      response_header += "Connection: Close\r\n"
+      response_header += "Content-Type: text/html\r\n"
+
+      # ヘッダーとボディを空行でくっつけた上でbytesに変換し、レスポンス全体を生成する
+      response = (response_line + response_header + "\r\n" + response_body).encode()
 
       # クライアントへレスポンスを送信する
-      client_socket.sendall(response)
+      client_socket.send(response)
 
       # 返事は特に返さず、通信を終了させる
       client_socket.close()
@@ -48,5 +62,5 @@ class TCPSserver:
       print("=== サーバを停止します ===")
 
 if __name__ == '__main__':
-  server = TCPSserver()
+  server = WebSserver()
   server.serve()

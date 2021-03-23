@@ -39,7 +39,7 @@ class TCPSserver:
         response = f.read()
 
       # クライアントへレスポンスを送信する
-      client_socket.sendall(response)
+      client_socket.send(response)
 
       # 返事は特に返さず、通信を終了させる
       client_socket.close()
