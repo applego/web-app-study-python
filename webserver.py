@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+import os
 import socket
 from datetime import datetime
 
@@ -7,6 +8,12 @@ class WebSserver:
   """
   Webサーバを表すクラス
   """
+
+  # 実行ファイルのあるディレクトリ
+  BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+  # 静的配信するファイルを置くディレクトリ
+  STATIC_ROOT = os.path.join(BASE_DIR,"static")
+
   def serve(self):
     """
     サーバを起動する
@@ -26,7 +33,7 @@ class WebSserver:
       # 外部からの接続を待ち、接続があったらコネクションを確立する
       print("=== クライアントからの接続を待ちます ===")
       (client_socket, address) = server_socket.accept()
-      print("=== クライアントとの接続が完了しました reote_address: {} ===".format(address))
+      print(f"=== クライアントとの接続が完了しました reote_address: {address} ===")
 
       # クライアントから送られてきたデータを取得する
       request = client_socket.recv(4096)
@@ -35,22 +42,49 @@ class WebSserver:
       with open("server_recv.txt", "wb") as f:
         f.write(request)
 
-      # レスポンスボディを生成
-      response_body = "<html><body><h1>It works!</h1></body></html>"
+      # +
+      # requestをrequest.htmlに書き込む
+      request_html_path = os.path.join(self.STATIC_ROOT, "request.html")
+      with open(request_html_path, "wt") as f:
+        str_request = request.decode().replace('\r\n', '<br>');
+        print(f"<html><body>{str_request}</body></html>")
+        f.write(f"<html><body>{str_request}</body></html>")
+
+
+      # リクエスト全体を
+      # 1. リクエストライン（１行目）
+      # 2. リクエストヘッダー（２行目〜空行）
+      # 3. リクエストボディ（空行〜）
+      # にパースする
+
+      request_line, remain = request.split(b"\r\n", maxsplit=1)
+      request_header, request_body = remain.split(b"\r\n\r\n", maxsplit=1)
+
+      # リクエストラインをパースする
+      method, path, http_version = request_line.decode().split(" ")
+
+      # pathの先頭の/を削除し、相対パスにしておく
+      relative_path = path.lstrip("/")
+      # ファイルのpathを取得
+      static_file_path = os.path.join(self.STATIC_ROOT, relative_path)
+
+      # ファイルからレスポンスボディを生成
+      with open(static_file_path, "rb") as f:
+        response_body = f.read()
 
       # レスポンスラインを生成
       response_line = "HTTP/1.1 200 OK\r\n"
 
       # レスポンスヘッダーを生成
       response_header = ""
-      response_header += "Date: {}\r\n".format(datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'))
+      response_header += f"Date: {datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')}\r\n"
       response_header += "Host: HenaServer//0.1\r\n"
-      response_header += "Content-Length: {}\r\n".format(len(response_body.encode()))
+      response_header += f"Content-Length: {len(response_body)}\r\n"
       response_header += "Connection: Close\r\n"
       response_header += "Content-Type: text/html\r\n"
 
       # ヘッダーとボディを空行でくっつけた上でbytesに変換し、レスポンス全体を生成する
-      response = (response_line + response_header + "\r\n" + response_body).encode()
+      response = (response_line + response_header + "\r\n").encode() + response_body
 
       # クライアントへレスポンスを送信する
       client_socket.send(response)
