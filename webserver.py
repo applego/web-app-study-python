@@ -13,7 +13,16 @@ class WebSserver:
   # 実行ファイルのあるディレクトリ
   BASE_DIR = os.path.dirname(os.path.abspath(__file__))
   # 静的配信するファイルを置くディレクトリ
-  STATIC_ROOT = os.path.join(BASE_DIR,"static")
+  STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+  # 拡張子とMIME Typeの対応
+  MIME_TYPE = {
+    "html": "text/html",
+    "css": "text/css",
+    "png": "image/png",
+    "jpg": "image/jpg",
+    "gif": "image/gif",
+  }
 
   def serve(self):
     """
@@ -84,6 +93,15 @@ class WebSserver:
             response_body = b"<html><body><h1>404 Not Found</h1></body></html>"
             response_line = "HTTP/1.1 404 Not Found\r\n"
 
+          # ヘッダー生成のためにContent-Typeを取得しておく
+          # pathから拡張子を取得
+          if "." in path:
+            ext = path.split(".", maxsplit=1)[-1]
+          else:
+            ext = ""
+          # 拡張子からMIME Typeを取得
+          # 知らない対応していない拡張子の場合はoctet-streamとする
+          content_type = self.MIME_TYPE.get(ext,"application/octet-stream")
 
           # レスポンスヘッダーを生成
           response_header = ""
@@ -91,7 +109,7 @@ class WebSserver:
           response_header += "Host: HenaServer//0.1\r\n"
           response_header += f"Content-Length: {len(response_body)}\r\n"
           response_header += "Connection: Close\r\n"
-          response_header += "Content-Type: text/html\r\n"
+          response_header += f"Content-Type: {content_type}\r\n"
 
           # ヘッダーとボディを空行でくっつけた上でbytesに変換し、レスポンス全体を生成する
           response = (response_line + response_header + "\r\n").encode() + response_body
