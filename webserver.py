@@ -3,6 +3,7 @@
 import os
 import socket
 from datetime import datetime
+import traceback
 
 class WebSserver:
   """
@@ -30,74 +31,83 @@ class WebSserver:
       server_socket.bind(("localhost", 8080))
       server_socket.listen(10)
 
-      # 外部からの接続を待ち、接続があったらコネクションを確立する
-      print("=== クライアントからの接続を待ちます ===")
-      (client_socket, address) = server_socket.accept()
-      print(f"=== クライアントとの接続が完了しました reote_address: {address} ===")
+      while True:
+        # 外部からの接続を待ち、接続があったらコネクションを確立する
+        print("=== クライアントからの接続を待ちます ===")
+        (client_socket, address) = server_socket.accept()
+        print(f"=== クライアントとの接続が完了しました reote_address: {address} ===")
 
-      # クライアントから送られてきたデータを取得する
-      request = client_socket.recv(4096)
+        try:
+          # クライアントから送られてきたデータを取得する
+          request = client_socket.recv(4096)
 
-      # クライアントから送られてきたデータをファイルに書き出す
-      with open("server_recv.txt", "wb") as f:
-        f.write(request)
+          # クライアントから送られてきたデータをファイルに書き出す
+          with open("server_recv.txt", "wb") as f:
+            f.write(request)
 
-      # +
-      # requestをrequest.htmlに書き込む
-      request_html_path = os.path.join(self.STATIC_ROOT, "request.html")
-      with open(request_html_path, "wt") as f:
-        str_request = request.decode().replace('\r\n', '<br>');
-        print(f"<html><body>{str_request}</body></html>")
-        f.write(f"<html><body>{str_request}</body></html>")
-
-
-      # リクエスト全体を
-      # 1. リクエストライン（１行目）
-      # 2. リクエストヘッダー（２行目〜空行）
-      # 3. リクエストボディ（空行〜）
-      # にパースする
-
-      request_line, remain = request.split(b"\r\n", maxsplit=1)
-      request_header, request_body = remain.split(b"\r\n\r\n", maxsplit=1)
-
-      # リクエストラインをパースする
-      method, path, http_version = request_line.decode().split(" ")
-
-      # pathの先頭の/を削除し、相対パスにしておく
-      relative_path = path.lstrip("/")
-      # ファイルのpathを取得
-      static_file_path = os.path.join(self.STATIC_ROOT, relative_path)
-
-      # ファイルからレスポンスボディを生成
-      try:
-        with open(static_file_path, "rb") as f:
-          response_body = f.read()
-
-        # レスポンスラインを生成
-        response_line = "HTTP/1.1 200 OK\r\n"
-
-      except OSError:
-        # ファイルが見つからない場合は4040を返す
-        response_body = b"<html><body><h1>404 Not Found</h1></body></html>"
-        response_line = "HTTP/1.1 404 Not Found\r\n"
+          # +
+          # requestをrequest.htmlに書き込む
+          request_html_path = os.path.join(self.STATIC_ROOT, "request.html")
+          with open(request_html_path, "wt") as f:
+            str_request = request.decode().replace('\r\n', '<br>');
+            print(f"<html><body>{str_request}</body></html>")
+            f.write(f"<html><body>{str_request}</body></html>")
 
 
-      # レスポンスヘッダーを生成
-      response_header = ""
-      response_header += f"Date: {datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')}\r\n"
-      response_header += "Host: HenaServer//0.1\r\n"
-      response_header += f"Content-Length: {len(response_body)}\r\n"
-      response_header += "Connection: Close\r\n"
-      response_header += "Content-Type: text/html\r\n"
+          # リクエスト全体を
+          # 1. リクエストライン（１行目）
+          # 2. リクエストヘッダー（２行目〜空行）
+          # 3. リクエストボディ（空行〜）
+          # にパースする
 
-      # ヘッダーとボディを空行でくっつけた上でbytesに変換し、レスポンス全体を生成する
-      response = (response_line + response_header + "\r\n").encode() + response_body
+          request_line, remain = request.split(b"\r\n", maxsplit=1)
+          request_header, request_body = remain.split(b"\r\n\r\n", maxsplit=1)
 
-      # クライアントへレスポンスを送信する
-      client_socket.send(response)
+          # リクエストラインをパースする
+          method, path, http_version = request_line.decode().split(" ")
 
-      # 返事は特に返さず、通信を終了させる
-      client_socket.close()
+          # pathの先頭の/を削除し、相対パスにしておく
+          relative_path = path.lstrip("/")
+          # ファイルのpathを取得
+          static_file_path = os.path.join(self.STATIC_ROOT, relative_path)
+
+          # ファイルからレスポンスボディを生成
+          try:
+            with open(static_file_path, "rb") as f:
+              response_body = f.read()
+
+            # レスポンスラインを生成
+            response_line = "HTTP/1.1 200 OK\r\n"
+
+          except OSError:
+            # ファイルが見つからない場合は4040を返す
+            response_body = b"<html><body><h1>404 Not Found</h1></body></html>"
+            response_line = "HTTP/1.1 404 Not Found\r\n"
+
+
+          # レスポンスヘッダーを生成
+          response_header = ""
+          response_header += f"Date: {datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')}\r\n"
+          response_header += "Host: HenaServer//0.1\r\n"
+          response_header += f"Content-Length: {len(response_body)}\r\n"
+          response_header += "Connection: Close\r\n"
+          response_header += "Content-Type: text/html\r\n"
+
+          # ヘッダーとボディを空行でくっつけた上でbytesに変換し、レスポンス全体を生成する
+          response = (response_line + response_header + "\r\n").encode() + response_body
+
+          # クライアントへレスポンスを送信する
+          client_socket.send(response)
+
+        except Exception as e:
+          # リクエストの処理中に雷害が発生した場合はコンソールにエラーログを出力し、
+          # 処理を続行する
+          print("=== リクエストの処理中にエラーが発生しました ===")
+          traceback.print_exc()
+
+        finally:
+          # 例外が発生した場合も、発生しなかった場合も、TCP通信のcloseは行う
+          client_socket.close()
 
     finally:
       print("=== サーバを停止します ===")
