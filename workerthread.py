@@ -7,6 +7,8 @@ import traceback
 from threading import Thread
 from typing import Optional, Tuple
 import textwrap
+from pprint import pformat
+import re
 
 class WorkerThread(Thread):
   # 実行ファイルのあるディレクトリ
@@ -69,6 +71,34 @@ class WorkerThread(Thread):
         #　レスポンスラインを生成
         response_line = "HTTP/1.1 200 OK\r\n"
 
+      # pathが/nowのときは、現在時刻を表示するHTMLを生成する
+      elif path == "/show_request":
+        html = f"""\
+          <html>
+          <body>
+            <h1>Request Line:</h1>
+            <p>
+              {method} {path} {http_version}
+            </p>
+            <h1>Headers:</h1>
+            <pre>
+              {pformat(request_header)}
+            </pre>
+            <h1>Body:</h1>
+            <pre>
+              {request_body.decode("utf-8","ignore")}
+            </pre>
+          </body>
+          </html>
+          """
+        response_body = textwrap.dedent(html).encode()
+
+        # Content-Typeを指定
+        content_type = "text/html"
+
+        #　レスポンスラインを生成
+        response_line = "HTTP/1.1 200 OK\r\n"
+
       else:
         try:
           # ファイルからレスポンスボディを生成
@@ -120,13 +150,13 @@ class WorkerThread(Thread):
       ## print(f"<html><body>{str_request}</body></html>")
       f.write(f"<html><body>{str_request}</body></html>")
 
-  def parse_http_request(self, request: bytes) -> Tuple[str, str, str, bytes, bytes]:
+  def parse_http_request(self, request: bytes) -> Tuple[str, str, str, dict, bytes]:
     """
     HTTPリクエストを
     1. method: str
     2. path: str
     3. http_version: str
-    4. request_header: bytes
+    4. request_header: dict
     5. request_body: bytes
     に分割/変換する
     """
@@ -139,10 +169,16 @@ class WorkerThread(Thread):
     request_line, remain = request.split(b"\r\n", maxsplit=1)
     request_header, request_body = remain.split(b"\r\n\r\n", maxsplit=1)
 
-    # リクエストラインをパースする
+    # リクエストラインを文字列に変換してパースする
     method, path, http_version = request_line.decode().split(" ")
 
-    return method, path, http_version, request_header, request_body
+    # リクエストヘッダーを辞書にパースする
+    headers = {}
+    for header_row in request_header.decode().split("\r\n"):
+      key, value = re.split(r": *", header_row, maxsplit=1)
+      headers[key] = value
+
+    return method, path, http_version, headers, request_body
 
   def get_static_file_content(self, path: str) -> bytes:
     """
