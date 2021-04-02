@@ -7,6 +7,8 @@ from threading import Thread
 from typing import Optional, Tuple
 
 import views
+from henango.http.request import HTTPRequest
+from henango.http.response import HTTPResponse
 
 class WorkerThread(Thread):
   # 実行ファイルのあるディレクトリ
@@ -30,6 +32,13 @@ class WorkerThread(Thread):
     "/parameters":views.parameters,
   }
 
+  # ステータスコードとステータスラインの対応
+  STATUS_LINES = {
+    200: "200 OK",
+    404: "404 Not Found",
+    405:"405 Method Not Allowed",
+  }
+
   def __init__(self, client_socket: socket, address: Tuple[str, int]):
     super().__init__()
 
@@ -45,39 +54,29 @@ class WorkerThread(Thread):
     try:
 
       # クライアントから送られてきたデータを取得する
-      request = self.client_socket.recv(4096)
+      request_bytes = self.client_socket.recv(4096)
 
       # クライアントから送られてきたデータをファイルに書き出す
       with open("server_recv.txt", "wb") as f:
-        f.write(request)
+        f.write(request_bytes)
 
-      self.update_request_html(request)
+      self.update_request_html(request_bytes)
 
       # HTTPリクエストをパースする
-      method, path, http_version, request_header, request_body = self.parse_http_request(request)
-
-      response_body: bytes
-      content_type: Optional[str]
-      response_line: str
+      request = self.parse_http_request(request_bytes)
 
       # pathに対応するview関数があれば、関数を取得して呼び出し、レスポンスを生成する
-      if path in self.URL_VIEW:
-        view = self.URL_VIEW[path]
-        response_body, content_type, response_line = view(
-          method,path,http_version,request_header,response_body
-        )
+      if request.path in self.URL_VIEW:
+        view = self.URL_VIEW[request.path]
+        response = view(request)
 
       # pathがそれ以外のときは、静的ファイルからレスポンスを生成する
       else:
         try:
           # ファイルからレスポンスボディを生成
-          response_body = self.get_static_file_content(path)
-
-          # Content-Typeを指定
+          response_body = self.get_static_file_content(request.path)
           content_type = None
-
-          # レスポンスラインを生成
-          response_line = "HTTP/1.1 200 OK\r\n"
+          response = HTTPResponse(body=response_body,content_type=content_type,status_code=200)
 
         except OSError:
           # レスポンスを取得できなかった場合は、ログを出力して404を返す
@@ -85,16 +84,20 @@ class WorkerThread(Thread):
 
           response_body = b"<html><body><h1>404 Not Found</h1></body></html>"
           content_type = "text/html; charset=UTF-8"
-          response_line = "HTTP/1.1 404 Not Found\r\n"
+          response = HTTPResponse(body=response_body,content_type=content_type,status_code=404)
+
+      # レスポンスラインを生成
+      response_line = self.build_response_line(response)
 
       # レスポンスヘッダーを生成
-      response_header = self.build_response_header(path, response_body, content_type)
+      response_header = self.build_response_header(response, request)
+
 
       # ヘッダーとボディを空行でくっつけた上でbytesに変換し、レスポンス全体を生成する
-      response = (response_line + response_header + "\r\n").encode() + response_body
+      response_bytes = (response_line + response_header + "\r\n").encode() + response.body
 
       # クライアントへレスポンスを送信する
-      self.client_socket.send(response)
+      self.client_socket.send(response_bytes)
 
     except Exception as e:
       # リクエストの処理中に雷害が発生した場合はコンソールにエラーログを出力し、
@@ -119,7 +122,7 @@ class WorkerThread(Thread):
       ## print(f"<html><body>{str_request}</body></html>")
       f.write(f"<html><body>{str_request}</body></html>")
 
-  def parse_http_request(self, request: bytes) -> Tuple[str, str, str, dict, bytes]:
+  def parse_http_request(self, request: bytes) -> HTTPRequest:
     """
     HTTPリクエストを
     1. method: str
@@ -147,7 +150,7 @@ class WorkerThread(Thread):
       key, value = re.split(r": *", header_row, maxsplit=1)
       headers[key] = value
 
-    return method, path, http_version, headers, request_body
+    return HTTPRequest(path,method,http_version,headers,request_body)
 
   def get_static_file_content(self, path: str) -> bytes:
     """
@@ -161,28 +164,36 @@ class WorkerThread(Thread):
     with open(static_file_path, "rb") as f:
       return f.read()
 
-  def build_response_header(self,path:str,response_body:bytes,content_type:Optional[str]) -> str:
+  def build_response_line(self, response: HTTPResponse) -> str:
+    """
+    レスポンスラインを構築する
+    """
+    status_line = self.STATUS_LINES[response.status_code]
+    return f"HTTP/1.1 {status_line}"
+
+
+  def build_response_header(self,response:HTTPResponse,request:HTTPRequest) -> str:
     """
     レスポンスヘッダーを構築する
     """
 
     # Content-Typeが指定されていない場合はpathから特定する
-    if content_type is None:
+    if response.content_type is None:
       # pathから拡張子を取得
-      if "." in path:
-        ext = path.split(".", maxsplit=1)[-1]
+      if "." in request.path:
+        ext = request.path.split(".", maxsplit=1)[-1]
       else:
         ext = ""
       # 拡張子からMIME Typeを取得
       # 知らない対応していない拡張子の場合はoctet-streamとする
-      content_type = self.MIME_TYPE.get(ext,"application/octet-stream")
+      response.content_type = self.MIME_TYPE.get(ext,"application/octet-stream")
 
     # レスポンスヘッダーを生成
     response_header = ""
     response_header += f"Date: {datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')}\r\n"
     response_header += "Host: HenaServer//0.1\r\n"
-    response_header += f"Content-Length: {len(response_body)}\r\n"
+    response_header += f"Content-Length: {len(response.body)}\r\n"
     response_header += "Connection: Close\r\n"
-    response_header += f"Content-Type: {content_type}\r\n"
+    response_header += f"Content-Type: {response.content_type}\r\n"
 
     return response_header
