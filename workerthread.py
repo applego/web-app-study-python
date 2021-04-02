@@ -9,6 +9,7 @@ from typing import Optional, Tuple
 import textwrap
 from pprint import pformat
 import re
+import urllib.parse
 
 class WorkerThread(Thread):
   # 実行ファイルのあるディレクトリ
@@ -54,6 +55,7 @@ class WorkerThread(Thread):
       response_body: bytes
       content_type: Optional[str]
       response_line: str
+
       # pathが/nowのときは、現在時刻を表示するHTMLを生成する
       if path == "/now":
         html = f"""\
@@ -99,6 +101,31 @@ class WorkerThread(Thread):
         #　レスポンスラインを生成
         response_line = "HTTP/1.1 200 OK\r\n"
 
+      elif path == "/parameters":
+        if method == "GET":
+          response_body = b"<html><body><h1>405 Method Not Allowed</h1></body></html>"
+          content_type = "text/html; charset=UTF-8"
+          response_line = "HTTP/1.1 405 Method Not Allowed\r\n"
+
+        elif method == "POST":
+          post_params = urllib.parse.parse_qs(request_body.decode())
+          html = f"""\
+            <html>
+            <body>
+              <h1>Parameters:</h1>
+              <pre>{pformat(post_params)}</pre>
+            </body>
+            </html>
+          """
+          response_body = textwrap.dedent(html).encode()
+
+          # Content-Typeを指定
+          content_type = "text/html; charset=UTF-8"
+
+          # レスポンスラインを生成
+          response_line = "HTTP/1.1 200 OK\r\n"
+
+      # pathがそれ以外のときは、静的ファイルからレスポンスを生成する
       else:
         try:
           # ファイルからレスポンスボディを生成
