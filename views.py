@@ -1,16 +1,21 @@
 
+import textwrap
+import urllib.parse
 from datetime import datetime
 from pprint import pformat
-import textwrap
 from typing import Optional, Tuple
-import urllib.parse
-
 
 """
 切り出す先のモジュールの名前は、viewsとします。
 コネクションがどうとか、ヘッダーのパースがこうとか、そういったHTTPの事情は関知せず、見た目(view)の部分（= リクエストボディ）を生成することだけを責務として持つモジュールだからです。
 """
-def now() -> Tuple[bytes, Optional[str], str]:
+def now(
+  method: str,
+  path: str,
+  http_version: str,
+  request_header: dict,
+  request_body:bytes,
+) -> Tuple[bytes, Optional[str], str]:
   """
     現在時刻を表示するHTMLを生成する
     """
@@ -32,7 +37,11 @@ def now() -> Tuple[bytes, Optional[str], str]:
   return response_body,content_type,response_line
 
 def show_request(
-  method: str, path: str, http_version: str, request_header: dict, request_body: bytes
+  method: str,
+  path: str,
+  http_version: str,
+  request_header: dict,
+  request_body:bytes,
   ) -> Tuple[bytes, Optional[str], str]:
   """
     HTTPリクエストの内容を表示するHTMLを生成する
@@ -65,7 +74,13 @@ def show_request(
 
   return response_body, content_type, response_line
 
-def parameters(method: str, request_body: bytes) -> Tuple[bytes, Optional[str], str]:
+def parameters(
+  method: str,
+  path: str,
+  http_version: str,
+  request_header: dict,
+  request_body:bytes,
+) -> Tuple[bytes, Optional[str], str]:
   """
   POSTパラメータを表示するHTMLを表示する
   """
