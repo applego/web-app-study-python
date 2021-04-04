@@ -21,9 +21,8 @@ def now(
   """
   context = {"now":datetime.now()}
   body = render("now.html", context)
-  content_type = "text/html; charset=UTF-8"
 
-  return HTTPResponse(body=body, content_type=content_type,status_code=200)
+  return HTTPResponse(body=body)
 
 def show_request(
   request:HTTPRequest
@@ -50,9 +49,8 @@ def show_request(
   </html>
   """
   body = textwrap.dedent(html).encode()
-  content_type = "text/html; charset=UTF-8"
 
-  return HTTPResponse(body=body, content_type=content_type,status_code=200)
+  return HTTPResponse(body=body)
 
 def parameters(
   request:HTTPRequest
@@ -62,8 +60,7 @@ def parameters(
   """
   if request.method == "GET":
     body = b"<html><body><h1>405 Method Not Allowed</h1></body></html>"
-    content_type = "text/html; charset=UTF-8"
-    status_code = 405
+    return HTTPResponse(body=body,status_code=405)
 
   elif request.method == "POST":
     post_params = urllib.parse.parse_qs(request.body.decode())
@@ -76,10 +73,7 @@ def parameters(
       </html>
     """
     body = textwrap.dedent(html).encode()
-    content_type = "text/html; charset=UTF-8"
-    status_code = 200
-
-  return HTTPResponse(body=body, content_type=content_type,status_code=status_code)
+    return HTTPResponse(body=body)
 
 def user_profile(request: HTTPRequest) -> HTTPResponse:
   user_id = request.params["user_id"]
@@ -92,7 +86,5 @@ def user_profile(request: HTTPRequest) -> HTTPResponse:
     </html>
   """
   body = textwrap.dedent(html).encode()
-  content_type = "text/html; charset=UTF-8"
-  status_code = 200
 
-  return HTTPResponse(body=body, content_type=content_type,status_code=status_code)
+  return HTTPResponse(body=body)

@@ -30,5 +30,4 @@ def static(request: HTTPRequest) -> HTTPResponse:
     traceback.print_exc()
 
     response_body = b"<html><body><h1>404 Not Found</h1></body></html>"
-    content_type = "text/html; charset=UTF-8"
-    return HTTPResponse(body=response_body, content_type=content_type, status_code=404)
+    return HTTPResponse(body=response_body, status_code=404)

@@ -153,11 +153,13 @@ class Worker(Thread):
       # pathから拡張子を取得
       if "." in request.path:
         ext = request.path.split(".", maxsplit=1)[-1]
+        # 拡張子からMIME Typeを取得
+        # 知らない対応していない拡張子の場合はoctet-streamとする
+        response.content_type = self.MIME_TYPE.get(ext,"application/octet-stream")
       else:
-        ext = ""
-      # 拡張子からMIME Typeを取得
-      # 知らない対応していない拡張子の場合はoctet-streamとする
-      response.content_type = self.MIME_TYPE.get(ext,"application/octet-stream")
+        # pathに拡張子がない場合はhtml扱いとする
+        response.content_type = "text/html; charset=UTF-8"
+
 
     # レスポンスヘッダーを生成
     response_header = ""
