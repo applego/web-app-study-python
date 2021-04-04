@@ -7,6 +7,7 @@ from typing import Optional, Tuple
 
 from henango.http.request import HTTPRequest
 from henango.http.response import HTTPResponse
+from templates.renderer import render
 
 """
 切り出す先のモジュールの名前は、viewsとします。
@@ -18,10 +19,8 @@ def now(
   """
   現在時刻を表示するHTMLを生成する
   """
-  with open("./templates/now.html") as f:
-    template = f.read()
-    html = template.format(now=datetime.now())
-  body = textwrap.dedent(html).encode()
+  context = {"now":datetime.now()}
+  body = render("now.html", context)
   content_type = "text/html; charset=UTF-8"
 
   return HTTPResponse(body=body, content_type=content_type,status_code=200)
