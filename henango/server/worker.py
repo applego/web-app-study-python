@@ -10,6 +10,7 @@ import settings
 from henango.http.request import HTTPRequest
 from henango.http.response import HTTPResponse
 from urls import url_patterns
+from henango.urls.resolver import URLResolver
 
 
 class Worker(Thread):
@@ -55,16 +56,13 @@ class Worker(Thread):
       # HTTPリクエストをパースする
       request = self.parse_http_request(request_bytes)
 
-      # pathにマッチするurl_patternを探し、見つかればviewからレスポンスを生成する
-      for url_pattern in url_patterns:
-        match =  url_pattern.match(request.path)
-        if match:
-          request.params.update(match.groupdict())
-          response = url_pattern.view(request)
-          break
+      # URL解決を試みる
+      view = URLResolver().resolve(request)
 
-      # pathがそれ以外のときは、静的ファイルからレスポンスを生成する
+      if view:
+        response = view(request)
       else:
+        # pathがそれ以外のときは、静的ファイルからレスポンスを生成する
         try:
           # ファイルからレスポンスボディを生成
           response_body = self.get_static_file_content(request.path)
