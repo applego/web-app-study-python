@@ -30,25 +30,8 @@ def show_request(
   """
   HTTPリクエストの内容を表示するHTMLを生成する
   """
-  html = f"""\
-  <html>
-  <body>
-    <h1>Request Line:</h1>
-    <p>
-      {request.method} {request.path} {request.http_version}
-    </p>
-    <h1>Headers:</h1>
-    <pre>
-      {pformat(request.headers)}
-    </pre>
-    <h1>Body:</h1>
-    <pre>
-      {request.body.decode("utf-8","ignore")}
-    </pre>
-  </body>
-  </html>
-  """
-  body = textwrap.dedent(html).encode()
+  context = {"request":request,"headers":pformat(request.headers),"body":request.body.decode("utf-8", "ignore")}
+  body = render("show_request.html", context)
 
   return HTTPResponse(body=body)
 
@@ -60,31 +43,18 @@ def parameters(
   """
   if request.method == "GET":
     body = b"<html><body><h1>405 Method Not Allowed</h1></body></html>"
-    return HTTPResponse(body=body,status_code=405)
 
+    return HTTPResponse(body=body,status_code=405)
   elif request.method == "POST":
     post_params = urllib.parse.parse_qs(request.body.decode())
-    html = f"""\
-      <html>
-      <body>
-        <h1>Parameters:</h1>
-        <pre>{pformat(post_params)}</pre>
-      </body>
-      </html>
-    """
-    body = textwrap.dedent(html).encode()
+    context = {"post_params": post_params}
+    body = render("params.html", context)
+
     return HTTPResponse(body=body)
 
 def user_profile(request: HTTPRequest) -> HTTPResponse:
   user_id = request.params["user_id"]
-  html =f"""\
-    <html>
-    <body>
-      <h1>プロフィール</h1>
-      <p>ID: {user_id}</p>
-    </body>
-    </html>
-  """
-  body = textwrap.dedent(html).encode()
+  context = {"user_id": user_id}
+  body = render("user_profile.html", context)
 
   return HTTPResponse(body=body)
