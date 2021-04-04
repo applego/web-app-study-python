@@ -4,12 +4,12 @@ import traceback
 from datetime import datetime
 from socket import socket
 from threading import Thread
-from typing import Optional, Tuple, Match
+from typing import Optional, Tuple
 
 import settings
 from henango.http.request import HTTPRequest
 from henango.http.response import HTTPResponse
-from urls import URL_VIEW
+from urls import url_patterns
 
 
 class Worker(Thread):
@@ -56,11 +56,11 @@ class Worker(Thread):
       request = self.parse_http_request(request_bytes)
 
       # pathにマッチするurl_patternを探し、見つかればviewからレスポンスを生成する
-      for url_pattern, view in URL_VIEW.items():
-        match = self.url_match(url_pattern, request.path)
+      for url_pattern in url_patterns:
+        match =  url_pattern.match(request.path)
         if match:
           request.params.update(match.groupdict())
-          response = view(request)
+          response = url_pattern.view(request)
           break
 
       # pathがそれ以外のときは、静的ファイルからレスポンスを生成する
@@ -196,9 +196,3 @@ class Worker(Thread):
     response_header += f"Content-Type: {response.content_type}\r\n"
 
     return response_header
-
-  def url_match(self, url_pattern: str, path: str) -> Optional[Match]:
-    # URLパターンを正規表現パターンに変換する
-    # ex) '/user/<user_id>/profile' => '/user/(?P<user_id>[^/]+)//profile'
-    re_pattern = re.sub(r"<(.+?)>", r"(?P<\1>[^/]+)", url_pattern)
-    return re.match(re_pattern,path)
