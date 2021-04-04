@@ -9,6 +9,7 @@ from typing import Optional, Tuple
 import views
 from henango.http.request import HTTPRequest
 from henango.http.response import HTTPResponse
+from urls import URL_VIEW
 
 class WorkerThread(Thread):
   # 実行ファイルのあるディレクトリ
@@ -23,13 +24,6 @@ class WorkerThread(Thread):
     "png": "image/png",
     "jpg": "image/jpg",
     "gif": "image/gif",
-  }
-
-  # pathとview関数の対応
-  URL_VIEW = {
-    "/now": views.now,
-    "/show_request": views.show_request,
-    "/parameters":views.parameters,
   }
 
   # ステータスコードとステータスラインの対応
@@ -66,8 +60,8 @@ class WorkerThread(Thread):
       request = self.parse_http_request(request_bytes)
 
       # pathに対応するview関数があれば、関数を取得して呼び出し、レスポンスを生成する
-      if request.path in self.URL_VIEW:
-        view = self.URL_VIEW[request.path]
+      if request.path in URL_VIEW:
+        view = URL_VIEW[request.path]
         response = view(request)
 
       # pathがそれ以外のときは、静的ファイルからレスポンスを生成する
