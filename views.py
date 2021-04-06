@@ -58,3 +58,6 @@ def user_profile(request: HTTPRequest) -> HTTPResponse:
   body = render("user_profile.html", context)
 
   return HTTPResponse(body=body)
+
+def set_cookie(request: HTTPRequest) -> HTTPResponse:
+  return HTTPResponse(headers={"Set-Cookie": "username=TARO"})

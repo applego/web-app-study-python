@@ -169,4 +169,7 @@ class Worker(Thread):
     response_header += "Connection: Close\r\n"
     response_header += f"Content-Type: {response.content_type}\r\n"
 
+    for header_name, header_value in response.headers.items():
+      response_header += f"{header_name}: {header_value}\r\n"
+
     return response_header
