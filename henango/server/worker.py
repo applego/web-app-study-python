@@ -26,6 +26,7 @@ class Worker(Thread):
   # ステータスコードとステータスラインの対応
   STATUS_LINES = {
     200: "200 OK",
+    302: "302 Found",
     404: "404 Not Found",
     405:"405 Method Not Allowed",
   }
