@@ -8,6 +8,7 @@ from typing import Optional, Tuple
 from henango.http.request import HTTPRequest
 from henango.http.response import HTTPResponse
 from templates.renderer import render
+from henango.http.cookie import Cookie
 
 """
 切り出す先のモジュールの名前は、viewsとします。
@@ -72,8 +73,13 @@ def login(request: HTTPRequest) -> HTTPResponse:
     username = post_params["username"][0]
     email = post_params["email"][0]
 
+    cookies = [
+      Cookie(name="username", value=username, max_age=30),
+      Cookie(name="email", value=email, max_age=30),
+    ]
+
     return HTTPResponse(
-      status_code=302, headers={"Location": "/welcome"}, cookies={"username": username, "email": email}
+      status_code=302, headers={"Location": "/welcome"}, cookies=cookies
     )
 
 def welcome(request: HTTPRequest) -> HTTPResponse:
