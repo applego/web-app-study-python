@@ -73,14 +73,15 @@ def login(request: HTTPRequest) -> HTTPResponse:
     email = post_params["email"][0]
 
     return HTTPResponse(
-      status_code=302,
-      headers={"Location": "/welcome"},
-      cookies={"username": username, "email": email}
-      )
+      status_code=302, headers={"Location": "/welcome"}, cookies={"username": username, "email": email}
+    )
 
 def welcome(request: HTTPRequest) -> HTTPResponse:
   # Cookieにusernameが含まれていなければ、ログインしていないとみなして/loginへリダイレクト
   if "username" not in request.cookies:
+    return HTTPResponse(status_code=302, headers={"Location": "/login"})
+
+  if "email" not in request.cookies:
     return HTTPResponse(status_code=302, headers={"Location": "/login"})
 
   # Welcome画面を表示
